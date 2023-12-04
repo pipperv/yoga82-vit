@@ -43,4 +43,4 @@ Excecute the ``download_dataset.py`` file with python.
 python download_dataset.py
 ```
 
-There is a BlackList .txt file inside Yoga-82/ that lists files didn't correctly downloaded. This is so you don't have to try download corrupted files. In case you want to try download all dataset files or use a different Yoga-82 version, just delete ``Yoga-82/black_lisy.txt`` content. Don't say I didn't warn you!
+There is a BlackList .txt file inside Yoga-82/ that lists files didn't correctly downloaded. This is so you don't have to try download corrupted files. In case you want to try download all dataset files or use a different Yoga-82 version, just delete ``Yoga-82/black_list.txt`` content. Don't say I didn't warn you!
