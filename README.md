@@ -22,15 +22,10 @@ If executing on windows, you might as well:
 
 ```
 git clone https://github.com/pipperv/yoga82-vit.git
-```
-
-2 ) Install the prerequisites via
-
-```
 cd yoga82-vit
 ```
 
-3 ) Install the prerequisites via
+2 ) Install the prerequisites
 
 ```
 pip install -r requirements.txt
