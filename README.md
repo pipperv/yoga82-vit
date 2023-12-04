@@ -10,10 +10,10 @@ Anaconda is an open source distribution for the Python programming language. The
 
 You can create your own working environment so that, depending on the project, you can use different dependencies packages.
 
-1. install [anaconda](https://www.anaconda.com/) and [git](https://git-scm.com)
-1. open anaconda terminal
-1. ⌨️=``conda create -n vit python=3.9`` create working environment
-1. ⌨️=``conda activate vit``
+1. Install [anaconda](https://www.anaconda.com/) and [git](https://git-scm.com)
+1. Open anaconda terminal
+1. Type ``conda create -n vit python=3.9`` create working environment
+1. Type ``conda activate vit``
 
 
 If executing on windows, you might as well:
@@ -34,6 +34,21 @@ cd yoga82-vit
 ```
 pip install -r requirements.txt
 ```
+
+3 ) Install Pytorch
+
+With Conda:
+
+```
+conda install pytorch torchvision torchaudio pytorch-cuda=11.8 -c pytorch -c nvidia
+```
+
+Or pip
+
+```
+pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118
+```
+
 
 ### Download Dataset
 
