@@ -6,7 +6,7 @@ Anaconda is an open source distribution for the Python programming language. The
 
 You can create your own working environment so that, depending on the project, you can use different dependencies packages.
 
-1. install [anaconda](https://www.anaconda.com/)
+1. install [anaconda](https://www.anaconda.com/) and [git](https://git-scm.com)
 1. open anaconda terminal
 1. ⌨️=``conda create -n vit python=3.9`` create working environment
 1. ⌨️=``conda activate vit``
