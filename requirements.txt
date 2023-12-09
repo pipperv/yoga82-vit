@@ -2,3 +2,5 @@ pillow
 tqdm
 numpy
 argparse
+opencv-python
+matplotlib
