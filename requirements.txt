@@ -4,3 +4,5 @@ numpy
 argparse
 opencv-python
 matplotlib
+scikit-learn
+seaborn

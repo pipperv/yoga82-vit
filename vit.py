@@ -36,7 +36,9 @@ class TokenEmbedding(nn.Module):
         self.token = nn.Parameter(torch.randn(1, 1, self.hidden_size))
 
     def forward(self, x):
-        x = torch.cat((self.token, x), dim=1)
+        batch_size = x.size()[0]
+        tokens = self.token.expand(batch_size, -1, -1)
+        x = torch.cat((tokens, x), dim=1)
         return x
 
 class PositionalEmbedding(nn.Module):
@@ -74,7 +76,7 @@ class AttentionLayer(nn.Module):
         attention = torch.matmul(Q, K.transpose(-1, -2))
         attention = attention / np.sqrt(self.attention_out_size)
         attention = nn.functional.softmax(attention, dim=-1)
-        attention = torch.matmul(Q, V)
+        attention = torch.matmul(attention, V)
 
         return attention
     
@@ -150,6 +152,7 @@ class TransformerEncoder(nn.Module):
     Transformer Encoder Structure.
     '''
     def __init__(self, config_dict):
+        super().__init__()
         self.blocks = nn.ModuleList([])
         for _ in range(config_dict['num_hidden_layers']):
             block = EncoderBlock(config_dict)
@@ -162,7 +165,10 @@ class TransformerEncoder(nn.Module):
         return x
     
 class ViT(nn.Module):
+
     def __init__(self, config_dict):
+        super().__init__()
+        self.config = config_dict
         self.patch_embedding = PatchEmbedding(config_dict)
         self.token_embedding = TokenEmbedding(config_dict)
         self.pos_embedding = PositionalEmbedding(config_dict)
@@ -181,7 +187,7 @@ class ViT(nn.Module):
         x = self.encoder(x)
 
         # Classifier
-        x = self.cls_layer(x)
+        x = self.cls_layer(x[:,0,:])
 
         return x
     
