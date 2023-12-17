@@ -173,21 +173,36 @@ class ViT(nn.Module):
         self.token_embedding = TokenEmbedding(config_dict)
         self.pos_embedding = PositionalEmbedding(config_dict)
         self.encoder = TransformerEncoder(config_dict)
+        self.hidden_layer = nn.Linear(config_dict['hidden_size'],config_dict['hidden_size'])
+        self.tanh = nn.Tanh()
         self.cls_layer = nn.Linear(config_dict['hidden_size'],config_dict['num_classes'])
+        self.transfer_learning = config_dict['transfer_learning']
 
         self.apply(self._init_weights)
 
     def forward(self, x):
-        # Embedding
-        x = self.patch_embedding(x)
-        x = self.token_embedding(x)
-        x = self.pos_embedding(x)
+        if self.transfer_learning:
+            with torch.no_grad():
+                # Embedding
+                x = self.patch_embedding(x)
+                x = self.token_embedding(x)
+                x = self.pos_embedding(x)
 
-        # Transformer Encoder
-        x = self.encoder(x)
+                # Transformer Encoder
+                x = self.encoder(x)
+        else:
+            # Embedding
+            x = self.patch_embedding(x)
+            x = self.token_embedding(x)
+            x = self.pos_embedding(x)
+
+            # Transformer Encoder
+            x = self.encoder(x)
 
         # Classifier
-        x = self.cls_layer(x[:,0,:])
+        x = self.hidden_layer(x[:,0,:])
+        x = self.tanh(x)
+        x = self.cls_layer(x)
 
         return x
     

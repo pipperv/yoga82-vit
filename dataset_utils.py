@@ -60,20 +60,19 @@ def verify_dataset(directory_path='Images', show_valid_per_class=False, write_fi
     return valid_dataset, labels, classes
 
 def calculate_mean_std(image_paths):
-    transform = transforms.Compose([
-        transforms.ToTensor()
-    ])
-
     mean = torch.zeros(3)
     std = torch.zeros(3)
     total_images = len(image_paths)
 
     for image_path in tqdm(image_paths):
-        image = read_image(image_path,ImageReadMode.RGB)
-        image = image.to(float) / 255
+        image = read_image(image_path,ImageReadMode.RGB).to(float) / 255.0
 
-        mean += image.mean(dim=(1, 2)).item()
-        std += image.std(dim=(1, 2)).item()
+        current_mean = image.mean(dim=(1, 2))
+        current_std = image.std(dim=(1, 2))
+        if not np.isnan(current_mean.numpy()).any():
+            mean += current_mean
+        if not np.isnan(current_std.numpy()).any():
+            std += current_std
 
     mean /= total_images
     std /= total_images
@@ -96,7 +95,7 @@ def get_train(file_name="Yoga-82/yoga_train.txt",img_path='Images/'):
     lst = file.readlines()
     file.close()
     lst = [txt.strip().split(',') for txt in lst]
-    lst = [[img_path+"_".join(item[0].split(' ')),item[1],item[2],item[3]] for item in lst]
+    lst = [[img_path+"_".join(item[0].split(' ')),int(item[1]),int(item[2]),int(item[3])] for item in lst]
     dataset, _ = load_from_file()
     final_list = []
     for item in lst:
@@ -104,22 +103,22 @@ def get_train(file_name="Yoga-82/yoga_train.txt",img_path='Images/'):
             final_list.append(item)
     print(f"Train Dataset Total: {len(final_list)}")
     images, labels_6, labels_20, labels_82 = zip(*final_list)
-    return images, labels_6, labels_20, labels_82
+    return list(images), list(labels_6), list(labels_20), list(labels_82)
 
 def get_test(file_name="Yoga-82/yoga_test.txt",img_path='Images/'):
     file = open(file_name, 'r')
     lst = file.readlines()
     file.close()
     lst = [txt.strip().split(',') for txt in lst]
-    lst = [[img_path+"_".join(item[0].split(' ')),item[1],item[2],item[3]] for item in lst]
+    lst = [[img_path+"_".join(item[0].split(' ')),int(item[1]),int(item[2]),int(item[3])] for item in lst]
     dataset, _ = load_from_file()
     final_list = []
     for item in lst:
         if item[0] in dataset:
             final_list.append(item)
-    print(f"Train Dataset Total: {len(final_list)}")
+    print(f"Test Dataset Total: {len(final_list)}")
     images, labels_6, labels_20, labels_82 = zip(*final_list)
-    return images, labels_6, labels_20, labels_82
+    return list(images), list(labels_6), list(labels_20), list(labels_82)
 
 def get_class_list(directory_path='Images'):
     classes = os.listdir(directory_path)
