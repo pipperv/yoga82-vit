@@ -13,7 +13,7 @@ class Yoga82(Dataset):
         self.size = len(self.labels)
         self.transform = transform
         self.device = device
-        self.resizer = transforms.Resize((resize, resize))
+        self.resizer = transforms.Resize((resize, resize), antialias=True)
         self.images = torch.zeros((self.size,num_channels,resize,resize), dtype=torch.float)
         for i, img_path in enumerate(self.paths):
             img = read_image(img_path,ImageReadMode.RGB).to(torch.float) / 255.0
