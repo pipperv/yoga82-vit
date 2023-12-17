@@ -21,9 +21,6 @@ def list_images(directory_path):
 
 def verify_img(img_dir):
     try:
-        #img = Image.open(img_dir)
-        #img.verify()
-        #img.close()
         read_image(img_dir,ImageReadMode.RGB)
         return True
     except:
@@ -83,19 +80,49 @@ def calculate_mean_std(image_paths):
 
     return mean, std
 
-def load_from_file(file_name="Yoga-82/dataset.txt", show_valid_per_class=False):
-    
+def load_from_file(file_name="Yoga-82/dataset.txt",print_total_dataset=False):
     file = open(file_name, 'r')
     lst = file.readlines()
     file.close()
     lst = [txt.strip().split(' ') for txt in lst]
     dataset, labels = zip(*lst)
     labels = [int(label) for label in labels]
-
-    print(f"Dataset Total: {len(dataset)}")
+    if print_total_dataset:
+        print(f"Dataset Total: {len(dataset)}")
     return dataset, labels
+
+def get_train(file_name="Yoga-82/yoga_train.txt",img_path='Images/'):
+    file = open(file_name, 'r')
+    lst = file.readlines()
+    file.close()
+    lst = [txt.strip().split(',') for txt in lst]
+    lst = [[img_path+"_".join(item[0].split(' ')),item[1],item[2],item[3]] for item in lst]
+    dataset, _ = load_from_file()
+    final_list = []
+    for item in lst:
+        if item[0] in dataset:
+            final_list.append(item)
+    print(f"Train Dataset Total: {len(final_list)}")
+    images, labels_6, labels_20, labels_82 = zip(*final_list)
+    return images, labels_6, labels_20, labels_82
+
+def get_test(file_name="Yoga-82/yoga_test.txt",img_path='Images/'):
+    file = open(file_name, 'r')
+    lst = file.readlines()
+    file.close()
+    lst = [txt.strip().split(',') for txt in lst]
+    lst = [[img_path+"_".join(item[0].split(' ')),item[1],item[2],item[3]] for item in lst]
+    dataset, _ = load_from_file()
+    final_list = []
+    for item in lst:
+        if item[0] in dataset:
+            final_list.append(item)
+    print(f"Train Dataset Total: {len(final_list)}")
+    images, labels_6, labels_20, labels_82 = zip(*final_list)
+    return images, labels_6, labels_20, labels_82
 
 def get_class_list(directory_path='Images'):
     classes = os.listdir(directory_path)
     print(f"Total Classes: {len(classes)}")
     return classes
+
