@@ -18,11 +18,11 @@ class PatchEmbedding(nn.Module):
             out_channels = self.hidden_size,
             stride = self.patch_size,
             kernel_size = self.patch_size,
-        )
+        ) #(BATCH_SIZE, 3, 244, 244) => (BATCH_SIZE, hidden_size, 16, 16)
 
     def forward(self, x):
-        x = self.projection(x)
-        x = x.flatten(2).transpose(1, 2)
+        x = self.projection(x) #(BATCH_SIZE, 3, 244, 244) => (BATCH_SIZE, hidden_size, 16, 16)
+        x = x.flatten(2).transpose(1, 2) #(BATCH_SIZE, 3, 244, 244) => (BATCH_SIZE, 16*16, hidden_size)
         return x
     
 class TokenEmbedding(nn.Module):
@@ -50,9 +50,11 @@ class PositionalEmbedding(nn.Module):
         self.hidden_size = config_dict['hidden_size']
         self.num_patches = (config_dict['img_size'] // config_dict['patch_size']) ** 2
         self.pos_embedding = nn.Parameter(torch.randn(1, self.num_patches+1, self.hidden_size))
+        self.dropout = nn.Dropout(config_dict["hidden_dropout"])
 
     def forward(self, x):
         x = x + self.pos_embedding
+        x = self.dropout(x)
         return x
     
 class AttentionLayer(nn.Module):
@@ -68,17 +70,20 @@ class AttentionLayer(nn.Module):
         self.K = nn.Linear(self.hidden_size, self.attention_out_size)
         self.V = nn.Linear(self.hidden_size, self.attention_out_size)
 
+        self.dropout = nn.Dropout(config_dict["attention_dropout"])
+
     def forward(self, x):
         Q = self.Q(x)
         K = self.K(x)
         V = self.V(x)
 
-        attention = torch.matmul(Q, K.transpose(-1, -2))
-        attention = attention / np.sqrt(self.attention_out_size)
-        attention = nn.functional.softmax(attention, dim=-1)
-        attention = torch.matmul(attention, V)
+        x = torch.matmul(Q, K.transpose(-1, -2))
+        x = x / np.sqrt(self.attention_out_size)
+        x = nn.functional.softmax(x, dim=-1)
+        x = self.dropout(x)
+        x = torch.matmul(x, V)
 
-        return attention
+        return x
     
 class MultiHeadAttention(nn.Module):
     '''
@@ -93,6 +98,7 @@ class MultiHeadAttention(nn.Module):
 
         self.heads = nn.ModuleList([])
         self.output_linear = nn.Linear(self.mh_output_size, self.hidden_size)
+        self.dropout = nn.Dropout(config_dict["hidden_dropout"])
 
         for _ in range(self.num_attention_heads):
             head = AttentionLayer(config_dict)
@@ -101,9 +107,9 @@ class MultiHeadAttention(nn.Module):
     def forward(self, x):
         mh_output = [head(x) for head in self.heads]
         mh_output = torch.cat([output for output in mh_output], dim=-1)
-        mh_output = self.output_linear(mh_output)
-
-        return mh_output
+        x = self.output_linear(mh_output)
+        x = self.dropout(x)
+        return x
     
 class MLP(nn.Module):
     '''
@@ -119,11 +125,13 @@ class MLP(nn.Module):
 
         self.activation_fcn = nn.GELU()
 
+        self.dropout = nn.Dropout(config_dict["hidden_dropout"])
+
     def forward(self, x):
         x = self.layer_1(x)
         x = self.activation_fcn(x)
         x = self.layer_2(x)
-
+        x = self.dropout(x)
         return x
     
 class EncoderBlock(nn.Module):

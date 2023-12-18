@@ -4,7 +4,7 @@ import torch.nn as nn
 import wandb
 from tqdm import tqdm
 
-def train(model, dataloader, optimizer, criterion, config_dict):
+def train(model, dataloader, optimizer, criterion, scheduler, config_dict):
     # Initialize WandB
     wandb.init(project='yoga82-vit', name='run')
     loss_values = []
@@ -29,7 +29,8 @@ def train(model, dataloader, optimizer, criterion, config_dict):
             losses_per_epoch.append(loss.item())
             loss.backward()
             optimizer.step()
-            # Log metrics to WandB
+            scheduler.step()
+        # Log metrics to WandB
             
         avg_loss = np.mean(losses_per_epoch)
         wandb.log({'Epoch': epoch, 'Train Avg Loss per Epoch': avg_loss.item()})
