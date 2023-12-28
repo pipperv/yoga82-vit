@@ -203,9 +203,7 @@ class ViT(nn.Module):
             # Embedding
             x = self.embbeding(x)
             x = self.token_embedding(x)
-            x = self.pos_embedding(x)
-
-            # Transformer Encoder
+            # Pos Embbeding + Transformer Encoder
             x = self.Transformer(x)
 
         # Classifier
