@@ -63,4 +63,9 @@ There is a BlackList .txt file inside Yoga-82/ that lists files didn't correctly
 ### Current Progress
 
 ``vit.py`` contains all necesary modules to create a Vision Transformer Clasificator, everything built around Pytorch nn Modules for easy integration and training.
-``dataset.py`` and ``dataset_utils.py`` have all necesary tools to create and use the Yoga-82 dataset. ``test.ipynb`` contains the code done for training the ViT, including Dataset creation and preparation, with data aumentation, normalization and dataset balance. 
+``dataset.py`` and ``dataset_utils.py`` have all necesary tools to create and use the Yoga-82 dataset. ``test.ipynb`` contains the code done for training the ViT, including Dataset creation and preparation, with data aumentation, normalization and dataset balance.
+
+### ImageNet Pretrained Model
+
+To use the weights of the model pretrained in imagenet, download the model from this [link](https://storage.googleapis.com/vit_models/imagenet21k/ViT-B_16.npz) and put the file inside the main folder. Make shure to set ``"load_pretrained": True`` in the config dictionary of the test notebook.
+
