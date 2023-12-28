@@ -9,6 +9,7 @@ Images/
 # Weights
 *.pth
 *.pt
+*.npz
 wandb/
 
 # Byte-compiled / optimized / DLL files

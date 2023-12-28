@@ -66,16 +66,16 @@ class AttentionLayer(nn.Module):
         self.hidden_size = config_dict['hidden_size']
         self.attention_out_size = self.hidden_size // config_dict['num_attention_heads']
 
-        self.Q = nn.Linear(self.hidden_size, self.attention_out_size)
-        self.K = nn.Linear(self.hidden_size, self.attention_out_size)
-        self.V = nn.Linear(self.hidden_size, self.attention_out_size)
+        self.query = nn.Linear(self.hidden_size, self.attention_out_size)
+        self.key = nn.Linear(self.hidden_size, self.attention_out_size)
+        self.value = nn.Linear(self.hidden_size, self.attention_out_size)
 
         self.dropout = nn.Dropout(config_dict["attention_dropout"])
 
     def forward(self, x):
-        Q = self.Q(x)
-        K = self.K(x)
-        V = self.V(x)
+        Q = self.query(x)
+        K = self.key(x)
+        V = self.value(x)
 
         x = torch.matmul(Q, K.transpose(-1, -2))
         x = x / np.sqrt(self.attention_out_size)
@@ -110,7 +110,7 @@ class MultiHeadAttention(nn.Module):
         x = self.output_linear(mh_output)
         x = self.dropout(x)
         return x
-    
+
 class MLP(nn.Module):
     '''
     The MLP contains two layers with a GELU non-linearity.
@@ -120,17 +120,17 @@ class MLP(nn.Module):
         self.hidden_size = config_dict['hidden_size']
         self.mlp_hidden_size = config_dict['mlp_hidden_size']
 
-        self.layer_1 = nn.Linear(self.hidden_size,self.mlp_hidden_size)
-        self.layer_2 = nn.Linear(self.mlp_hidden_size,self.hidden_size)
+        self.Dense_0 = nn.Linear(self.hidden_size,self.mlp_hidden_size)
+        self.Dense_1 = nn.Linear(self.mlp_hidden_size,self.hidden_size)
 
         self.activation_fcn = nn.GELU()
 
         self.dropout = nn.Dropout(config_dict["hidden_dropout"])
 
     def forward(self, x):
-        x = self.layer_1(x)
+        x = self.Dense_0(x)
         x = self.activation_fcn(x)
-        x = self.layer_2(x)
+        x = self.Dense_1(x)
         x = self.dropout(x)
         return x
     
@@ -140,17 +140,17 @@ class EncoderBlock(nn.Module):
     '''
     def __init__(self, config_dict):
         super().__init__()
-        self.mh_attention = MultiHeadAttention(config_dict)
-        self.norm_1 = nn.LayerNorm(config_dict['hidden_size'])
-        self.mlp = MLP(config_dict)
-        self.norm_2 = nn.LayerNorm(config_dict['hidden_size'])
+        self.LayerNorm_0 = nn.LayerNorm(config_dict['hidden_size'])
+        self.MultiHeadDotProductAttention_1 = MultiHeadAttention(config_dict)
+        self.LayerNorm_2 = nn.LayerNorm(config_dict['hidden_size'])
+        self.MlpBlock_3 = MLP(config_dict)
 
     def forward(self, x):
-        attention_out = self.norm_1(x)
-        attention_out = self.mh_attention(attention_out)
+        attention_out = self.LayerNorm_0(x)
+        attention_out = self.MultiHeadDotProductAttention_1(attention_out)
         x = attention_out + x #skip connection
-        mlp_out = self.norm_2(x)
-        mlp_out = self.mlp(x)
+        mlp_out = self.LayerNorm_2(x)
+        mlp_out = self.MlpBlock_3(x)
         x = mlp_out + x #skip connection
 
         return x
@@ -161,13 +161,16 @@ class TransformerEncoder(nn.Module):
     '''
     def __init__(self, config_dict):
         super().__init__()
-        self.blocks = nn.ModuleList([])
+        self.posembed_input = PositionalEmbedding(config_dict)
+        self.encoderblock = nn.ModuleList([])
         for _ in range(config_dict['num_hidden_layers']):
             block = EncoderBlock(config_dict)
-            self.blocks.append(block)
+            self.encoderblock.append(block)
+        self.encoder_norm = nn.LayerNorm(config_dict['hidden_size'])
 
     def forward(self, x):
-        for block in self.blocks:
+        x = self.posembed_input(x)
+        for block in self.encoderblock:
             x = block(x)
 
         return x
@@ -177,13 +180,12 @@ class ViT(nn.Module):
     def __init__(self, config_dict):
         super().__init__()
         self.config = config_dict
-        self.patch_embedding = PatchEmbedding(config_dict)
+        self.embbeding = PatchEmbedding(config_dict)
         self.token_embedding = TokenEmbedding(config_dict)
-        self.pos_embedding = PositionalEmbedding(config_dict)
-        self.encoder = TransformerEncoder(config_dict)
-        self.hidden_layer = nn.Linear(config_dict['hidden_size'],config_dict['hidden_size'])
+        self.Transformer = TransformerEncoder(config_dict)
+        self.pre_logits = nn.Linear(config_dict['hidden_size'],config_dict['hidden_size'])
         self.tanh = nn.Tanh()
-        self.cls_layer = nn.Linear(config_dict['hidden_size'],config_dict['num_classes'])
+        self.head = nn.Linear(config_dict['hidden_size'],config_dict['num_classes'])
         self.transfer_learning = config_dict['transfer_learning']
         self.softmax = nn.Softmax(dim=-1)
 
@@ -193,25 +195,23 @@ class ViT(nn.Module):
         if self.transfer_learning:
             with torch.no_grad():
                 # Embedding
-                x = self.patch_embedding(x)
+                x = self.embbeding(x)
                 x = self.token_embedding(x)
-                x = self.pos_embedding(x)
-
-                # Transformer Encoder
-                x = self.encoder(x)
+                # Pos Embbeding + Transformer Encoder
+                x = self.Transformer(x)
         else:
             # Embedding
-            x = self.patch_embedding(x)
+            x = self.embbeding(x)
             x = self.token_embedding(x)
             x = self.pos_embedding(x)
 
             # Transformer Encoder
-            x = self.encoder(x)
+            x = self.Transformer(x)
 
         # Classifier
-        x = self.hidden_layer(x[:,0,:])
+        x = self.pre_logits(x[:,0,:])
         x = self.tanh(x)
-        x = self.cls_layer(x)
+        x = self.head(x)
         x = self.softmax(x)
 
         return x

@@ -8,6 +8,8 @@ import torch
 from torchvision import transforms
 from torchvision.io import read_image, ImageReadMode
 
+import vit
+
 def list_images(directory_path):
     dir_list = os.listdir(directory_path)
     image_extensions = ['.jpg', '.jpeg', '.png', '.gif', '.bmp']  # Add more extensions if needed
@@ -125,3 +127,58 @@ def get_class_list(directory_path='Images'):
     print(f"Total Classes: {len(classes)}")
     return classes
 
+def create_from_pretrained(config, path='ViT-B_16.npz'):
+    # Create a model
+    model = vit.ViT(config).to('cuda')
+    # Load pretrained file
+    if path == 'ViT-B_16.npz':
+        npzfile = np.load(path)
+        # Create a custom State Dict Loader for key mismatching
+        names, _ = zip(*model.named_parameters())
+        for key in npzfile.files:
+            new_key = key.replace('/','.').replace('scale','weight').replace('kernel','weight')
+            new_key = new_key.replace('encoderblock_','encoderblock.')
+            if key == 'head/bias' or key == 'head/kernel':
+                pass
+            elif new_key in names:
+                try:
+                    model.state_dict()[new_key].copy_(torch.Tensor(npzfile[key]))
+                except:
+                    model.state_dict()[new_key].copy_(torch.Tensor(npzfile[key].transpose()))
+            elif ('query' in new_key or 'key' in new_key or 'value' in new_key):
+                if 'weight' in new_key:
+                    new_key = new_key.replace('_','.').split('.')
+                    n_block = new_key[2]
+                    qkv = new_key[-2]
+                    for i, param in enumerate(torch.Tensor(npzfile[key].transpose(1, 2, 0))):
+                        model.state_dict()[f'Transformer.encoderblock.{n_block}.MultiHeadDotProductAttention_1.heads.{i}.{qkv}.weight'].copy_(param)
+                if 'bias' in new_key:
+                    new_key = new_key.replace('_','.').split('.')
+                    n_block = new_key[2]
+                    qkv = new_key[-2]
+                    for i, param in enumerate(torch.Tensor(npzfile[key])):
+                        model.state_dict()[f'Transformer.encoderblock.{n_block}.MultiHeadDotProductAttention_1.heads.{i}.{qkv}.bias'].copy_(param)
+            elif 'out' in new_key:
+                if 'weight' in new_key:
+                    new_key = new_key.replace('_','.').split('.')
+                    n_block = new_key[2]
+                    param = torch.Tensor(npzfile[key].transpose())
+                    n_0, n_1, n_2 = param.size()
+                    param = torch.reshape(param, (n_0, n_1 * n_2))
+                    model.state_dict()[f'Transformer.encoderblock.{n_block}.MultiHeadDotProductAttention_1.output_linear.weight'].copy_(param)
+                if 'bias' in new_key:
+                    param = torch.Tensor(npzfile[key].transpose())
+                    model.state_dict()[f'Transformer.encoderblock.{n_block}.MultiHeadDotProductAttention_1.output_linear.weight'].copy_(param)
+            elif 'out' in new_key:
+                model.state_dict()[new_key].copy_(torch.Tensor(npzfile[key].transpose()))
+            elif 'embedding' in new_key:
+                if 'weight' in new_key:
+                    model.state_dict()['embbeding.projection.weight'].copy_(torch.Tensor(npzfile[key].transpose()))
+                if 'bias' in new_key:
+                    model.state_dict()['embbeding.projection.bias'].copy_(torch.Tensor(npzfile[key].transpose()))
+            elif new_key == 'cls': 
+                model.state_dict()['token_embedding.token'].copy_(torch.Tensor(npzfile[key]))
+            else:
+                print(new_key, torch.Tensor(npzfile[key]).size())
+        
+        return model
