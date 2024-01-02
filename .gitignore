@@ -12,6 +12,11 @@ Images/
 *.npz
 wandb/
 
+# Results Files
+*.csv
+get_plots.ipynb
+Results/
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]

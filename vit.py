@@ -187,7 +187,6 @@ class ViT(nn.Module):
         self.tanh = nn.Tanh()
         self.head = nn.Linear(config_dict['hidden_size'],config_dict['num_classes'])
         self.transfer_learning = config_dict['transfer_learning']
-        self.softmax = nn.Softmax(dim=-1)
 
         self.apply(self._init_weights)
 
@@ -210,7 +209,6 @@ class ViT(nn.Module):
         x = self.pre_logits(x[:,0,:])
         x = self.tanh(x)
         x = self.head(x)
-        x = self.softmax(x)
 
         return x
     
